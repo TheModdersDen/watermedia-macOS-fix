@@ -1,6 +1,7 @@
 package me.srrapero720.watermedia.api.image;
 
 import me.lib720.madgag.gif.fmsware.GifDecoder;
+import me.srrapero720.watermedia.api.math.MathAPI;
 import me.srrapero720.watermedia.api.rendering.RenderAPI;
 import org.lwjgl.opengl.GL11;
 
@@ -70,7 +71,7 @@ public class ImageRenderer {
      * use API to calculate time
      * @param time time in millis
      * @return texture id usable on OpenGL
-     * @see ImageRenderer#texture(int, long, boolean) too
+     * @see ImageRenderer#texture(long, long, boolean) too
      */
     public int texture(long time) {
         if (textures == null) return -1;
@@ -101,17 +102,29 @@ public class ImageRenderer {
     }
 
     /**
-     * Calculate texture based on tick time (1s/20t) plus deltaTime (missing seconds on ticks)
+     * Calculate texture based on tick time (1s/20t) plus deltaTime (missing ms on ticks)
      * make tick count by yourself
      * @param tick Tick count
      * @param deltaTime extra ms to add
      * @param loop enable looping if tick count overflows duration
      * @return OpenGL texture ID
      */
-    public int texture(int tick, long deltaTime, boolean loop) {
+    public int texture(long tick, long deltaTime, boolean loop) {
         long time = (tick * 50L) + deltaTime;
         if (duration > 0 && time > duration && loop) time %= duration;
         return texture(time);
+    }
+
+    /**
+     * Calculate texture based on tick time (1s/20t) plus partialTicks (fraction of a tick)
+     * make tick count by yourself
+     * @param tick Tick count
+     * @param partialTicks fraction of tick time
+     * @param loop enable looping if tick count overflows duration
+     * @return OpenGL texture ID
+     */
+    public int texture(long tick, float partialTicks, boolean loop) {
+        return texture(tick, MathAPI.tickToMs(partialTicks), loop);
     }
 
     /**

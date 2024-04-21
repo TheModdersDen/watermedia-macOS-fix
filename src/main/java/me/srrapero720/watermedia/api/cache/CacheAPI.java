@@ -1,13 +1,17 @@
 package me.srrapero720.watermedia.api.cache;
 
 import me.srrapero720.watermedia.WaterMedia;
-import me.srrapero720.watermedia.loaders.IBootCore;
 import me.srrapero720.watermedia.api.WaterMediaAPI;
+import me.srrapero720.watermedia.loaders.ILoader;
+import me.srrapero720.watermedia.tools.IOTool;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.security.NoSuchAlgorithmException;
+import java.security.MessageDigest;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +30,7 @@ public class CacheAPI extends WaterMediaAPI {
 
     public CacheAPI() {
         super();
-        IBootCore bootstrap = WaterMedia.getInstance().getBootCore();
+        ILoader bootstrap = WaterMedia.getLoader();
         dir = bootstrap.tempDir().toAbsolutePath().resolve("cache/pictures").toFile();
         index = new File(dir, "index");
     }
@@ -37,7 +41,7 @@ public class CacheAPI extends WaterMediaAPI {
     }
 
     @Override
-    public boolean prepare(IBootCore bootCore) {
+    public boolean prepare(ILoader bootCore) {
         if (!released) {
             LOGGER.error(IT, "Failed due boot API while is not released, boot cancelled");
             return false;
@@ -51,7 +55,7 @@ public class CacheAPI extends WaterMediaAPI {
     }
 
     @Override
-    public void start(IBootCore bootCore) throws Exception {
+    public void start(ILoader bootCore) throws Exception {
         LOGGER.info(IT, "Mounted on path '{}'", dir);
         if (index.exists()) {
             try (DataInputStream stream = new DataInputStream(new GZIPInputStream(Files.newInputStream(index.toPath())))) {
@@ -134,6 +138,12 @@ public class CacheAPI extends WaterMediaAPI {
     }
 
     static File entry$getFile(String url) {
-        return new File(dir, Base64.getEncoder().encodeToString(url.getBytes()));
+		try {
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			return new File(dir, IOTool.encodeHexString(digest.digest(url.getBytes(StandardCharsets.UTF_8))));
+		} catch (NoSuchAlgorithmException e) { LOGGER.error(IT, "Failed to initalize digest", e); }
+
+		// Fallback to old naming
+		return new File(dir, Base64.getEncoder().encodeToString(url.getBytes()));
     }
 }
